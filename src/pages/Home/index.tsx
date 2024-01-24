@@ -20,6 +20,7 @@ import { Label } from '@/src/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Slider } from '@/src/components/ui/slider';
 
+import { useToast } from '@/src/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from 'convex/react';
 import { useState } from 'react';
@@ -48,8 +49,11 @@ const moodToEmojiMap: Record<string, string> = {
 };
 
 function Home() {
+  const { toast } = useToast();
+
   const [moodValue, setMoodValue] = useState<number>(5);
   const [success, setSuccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const addEntry = useMutation(api.entry.createEntry);
 
@@ -64,15 +68,26 @@ function Home() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const data = await addEntry({
-      food: values.food,
-      mood: values.mood,
-      name: values.name,
-      water: values.water,
-    });
+    if (values.food && values.mood && values.name && values.water) {
+      setLoading(true);
+      const data = await addEntry({
+        food: values.food,
+        mood: values.mood,
+        name: values.name,
+        water: values.water,
+      });
 
-    if (data) {
-      setSuccess(true);
+      setLoading(false);
+
+      if (data) {
+        setSuccess(true);
+      }
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Uh oh! You didn't fill out the form",
+        description: "It's only 4 questions. C`mon try again",
+      });
     }
   }
 
@@ -267,8 +282,9 @@ function Home() {
             <Button
               className='w-full bg-blue-800 hover:bg-blue-900'
               type='submit'
+              disabled={loading}
             >
-              Submit
+              {loading ? 'Loading...' : 'Submit'}
             </Button>
           </form>
         )}
